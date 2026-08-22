@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html>
+<head><title><%= username %> — VulnBazaar Profile</title></head>
+<body>
+  <h1><%= username %></h1>
+
+  <!-- CWE-79: Stored XSS — bio is user-controlled and rendered unescaped with <%- %>. -->
+  <div class="bio"><%- bio %></div>
+
+  <h2>Reviews</h2>
+  <ul>
+    <% reviews.forEach(function(r) { %>
+      <li>
+        <strong><%= r.author %></strong> (<%= r.rating %>/5):
+        <!-- CWE-79: Stored XSS — review body reflected unescaped too. -->
+        <span><%- r.body %></span>
+      </li>
+    <% }); %>
+  </ul>
+</body>
+</html>

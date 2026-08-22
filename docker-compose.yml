@@ -1,0 +1,57 @@
+version: "3.9"
+
+# CYPHEX target: VulnBazaar — a deliberately-vulnerable polyglot commerce stack.
+# Bring the whole thing up, then point CYPHEX at ./gateway (or --repo this folder)
+# for the sandbox-managed run, or scan the *live* stack with `cyphex scan http://localhost:3000`
+# to exercise DeepAgents against real running services (no sandbox in that mode — see README).
+
+services:
+  gateway:
+    build: ./gateway
+    ports:
+      - "3000:3000"
+    environment:
+      - PORT=3000
+      - PG_URL=postgres://vulnuser:vulnpass123@postgres:5432/vulnbazaar
+      - MONGO_URL=mongodb://mongo:27017/vulnbazaar
+      - REDIS_URL=redis://redis:6379
+      - INVOICE_SERVICE_URL=http://invoice-service:5000
+      - OLLAMA_URL=http://host.docker.internal:11434
+      # CWE-798: hardcoded secret shipped via compose env instead of a vault/secret store
+      - JWT_SECRET=supersecret123
+      - ADMIN_DEBUG_KEY=letmein2024
+    depends_on:
+      - postgres
+      - mongo
+      - redis
+      - invoice-service
+
+  invoice-service:
+    build: ./invoice-service
+    ports:
+      - "5000:5000"
+    environment:
+      - FLASK_ENV=production
+
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      - POSTGRES_USER=vulnuser
+      - POSTGRES_PASSWORD=vulnpass123
+      - POSTGRES_DB=vulnbazaar
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./db-init/postgres:/docker-entrypoint-initdb.d
+
+  mongo:
+    image: mongo:7
+    ports:
+      - "27017:27017"
+    volumes:
+      - ./db-init/mongo:/docker-entrypoint-initdb.d
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
